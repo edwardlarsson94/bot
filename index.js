@@ -15,8 +15,8 @@ const CronJob = require('cron').CronJob;
 const accounts = [
     //Cuenta: 1
     {
-        DEPOSIT_WALLET_PRIVATE_KEY: '', //Private Key
-        VAULT_WALLET_ADDRESS: '', //Direccion hacia donde mandar los fondos
+        DEPOSIT_WALLET_PRIVATE_KEY: 'PRIVATE KEY ACA', //Private Key
+        VAULT_WALLET_ADDRESS: 'DIRECCION DONDE SE TE HARA LLEGAR LOS FONDOS', //Direccion hacia donde mandar los fondos
         CONFIRMATIONS_BEFORE_WITHDRAWAL: 1, //MAX 3, Mientras Menos confirmaciones mas rapido el bot intetara el envio
         RPCDatos: 'wss://bsc.getblock.io/mainnet/?api_key=f1727523-b145-4057-9848-7f0aa2896705', //RPC Nodo Websocket
         CoinNetwork: 'BNB',
@@ -46,16 +46,28 @@ const main = async (account, index) => {
     const depositWallet = new ethers.Wallet(account.DEPOSIT_WALLET_PRIVATE_KEY, providers[index])
     const depositWalletAddress = await depositWallet.getAddress()
 
-    const balanceActual = await depositWallet.getBalance('latest') //Obtener Balance
-    const balanceConversion = utils.formatEther(balanceActual);
-
-
     //TX :: DATOS
     const currentBalance = await depositWallet.getBalance('latest') //Obtener Balance
-    const currentBalanceConversion = utils.formatEther(currentBalance);
+    const currentBalanceConversion = await utils.formatEther(currentBalance);
+ 
+    //Obtener Valor de Maximo Fee en BNB
+    const MaxVelocidadFee = BigNumber.from(25000).mul(9000000000) //Obtenemos Valor de Comision MAXIMA Velocidad
+    const MaxVelocidadFeeConversion = utils.formatEther(MaxVelocidadFee); //Calcular Comision Total en BNB
+    //Obtener Valor de Maximo Fee en BNB
 
-    const gasPrice = 9000000000 //9 Gwei(9000000000) >> 5 Gwei(5000000000) Por Defecto //Automatico = await providers[index].getGasPrice()
-    const gasLimit = 28000
+
+    //FILTRAR LIMITE DE Gwei Segun el Deposito
+    if(currentBalanceConversion >= MaxVelocidadFeeConversion){
+    //Si El Maximo Fee es Menor que la Cantidad Disponible de BNB > Entonces Realizamos Retiro con Maxima Velocidad 9 Gwei
+    gasPrice = 9000000000 //9 Gwei(9000000000) >> 5 Gwei(5000000000) Por Defecto //Automatico = await providers[index].getGasPrice()
+    gasLimit = 25000
+    }else{
+    //Por Defecto :: Si El Maximo Fee es Mayor que la Cantidad Disponible en BNB > Entonces Realizamos Retiro con Velocidad Rapida 6 Gwei
+    gasPrice = 6000000000 //6 Gwei(6000000000) >> 5 Gwei(5000000000) Por Defecto //Automatico = await providers[index].getGasPrice()
+    gasLimit = 22000
+    }
+    //FILTRAR LIMITE DE Gwei Segun el Deposito
+
     const maxGasFee = BigNumber.from(gasLimit).mul(gasPrice)
                             
     const tx = {
@@ -75,12 +87,13 @@ const main = async (account, index) => {
                         console.log(`✅Retiro [Default]: ${utils.formatEther(currentBalance.sub(maxGasFee))} ${account.CuentaId}(${account.CoinNetwork}) Para ${account.VAULT_WALLET_ADDRESS} ✅ ► `+ObtenerTimeAhora()+``)
                 },
                 (reason) => {
+                        //Si falla destruimos y reiniciamos
                         console.error(`►Retiro Fallido [Default]: ${utils.formatEther(currentBalance.sub(maxGasFee))} ${account.CuentaId}(${account.CoinNetwork}) ► `+ObtenerTimeAhora()+``)
-                        },
+                },
     )
     //Intentar Auto Retiro ::
 
-    console.log(`►Buscando Tx ${account.CoinNetwork} en ${depositWalletAddress} | Balance: `+balanceConversion+` ${account.CoinNetwork} ► `+ObtenerTimeAhora()+` `)
+    console.log(`►Buscando Tx ${account.CoinNetwork} en ${depositWalletAddress} | Balance: `+currentBalanceConversion+` ${account.CoinNetwork} ► `+ObtenerTimeAhora()+` `)
 
     providers[index].on('pending', (txHash) => {
         try {
@@ -100,9 +113,25 @@ const main = async (account, index) => {
 
                         //TX :: DATOS
                         const currentBalancewait = await depositWallet.getBalance('latest') //Obtener Balance
+                        const currentBalanceConversionwait = await utils.formatEther(currentBalancewait);
 
-                        const gasPricewait = 9000000000 //9 Gwei(8000000000) >> 5 Gwei(5000000000) Por Defecto //Automatico = await providers[index].getGasPrice()
-                        const gasLimitwait = 28000
+                        //Obtener Valor de Maximo Fee en BNB
+                        const MaxVelocidadFee = BigNumber.from(25000).mul(9000000000) //Obtenemos Valor de Comision MAXIMA Velocidad
+                        const MaxVelocidadFeeConversion = utils.formatEther(MaxVelocidadFee); //Calcular Comision Total en BNB
+                        //Obtener Valor de Maximo Fee en BNB
+
+                        //FILTRAR LIMITE DE Gwei Segun el Deposito
+                        if(currentBalanceConversionwait >= MaxVelocidadFeeConversion){
+                        //Si El Maximo Fee es Menor que la Cantidad Disponible de BNB > Entonces Realizamos Retiro con Maxima Velocidad 9 Gwei
+                        gasPricewait = 9000000000 //9 Gwei(9000000000) >> 5 Gwei(5000000000) Por Defecto //Automatico = await providers[index].getGasPrice()
+                        gasLimitwait = 25000
+                        }else{
+                        //Por Defecto :: Si El Maximo Fee es Mayor que la Cantidad Disponible en BNB > Entonces Realizamos Retiro con Velocidad Rapida 6 Gwei
+                        gasPricewait = 6000000000 //6 Gwei(6000000000) >> 5 Gwei(5000000000) Por Defecto //Automatico = await providers[index].getGasPrice()
+                        gasLimitwait = 22000
+                        }
+                        //FILTRAR LIMITE DE Gwei Segun el Deposito
+
                         const maxGasFeewait = BigNumber.from(gasLimit).mul(gasPrice)
                             
                         const txwait = {
@@ -119,10 +148,11 @@ const main = async (account, index) => {
                             //Intentar Auto Retiro ::
                             depositWallet.sendTransaction(txwait).then(
                                 (_receipt) => {
-                                    console.log(`✅Retiro: ${utils.formatEther(currentBalance.sub(maxGasFeewait))} ${account.CoinNetwork} Para ${account.VAULT_WALLET_ADDRESS} ✅ ► `+ObtenerTimeAhora()+``)
+                                    console.log(`✅Retiro: ${currentBalanceConversionwait} ${account.CoinNetwork} Para ${account.VAULT_WALLET_ADDRESS} ✅ ► `+ObtenerTimeAhora()+``)
                                 },
                                 (reason) => {
-                                    console.error(`►Retiro Fallido: ${utils.formatEther(currentBalance.sub(maxGasFeewait))} ${account.CoinNetwork} ► `+ObtenerTimeAhora()+``)
+                                    //Si falla destruimos y reiniciamos
+                                    console.error(`►Retiro Fallido: ${currentBalanceConversionwait} ${account.CoinNetwork} ► `+ObtenerTimeAhora()+``)
                                 },
                             )
                             //Intentar Auto Retiro ::
