@@ -19,8 +19,8 @@ GasLimitFast = 23000 //23 Mil, Limite de Gas Para Velocidad Rapida
 GasPriceFast = 6000000000 //6 Gwei, Para Aumentarlo o Disminuir Solo cambia el numero 6
 
 //Velocidad Maxima :: Para Transacciones de mas de 0.10$
-GasLimitMX = 29000 //29 Mil, Limite de Gas Para Velocidad Maxima
-GasPriceMX = 13000000000 //13 Gwei, Para Aumentarlo o Disminuir Solo cambia el numero 13
+GasLimitMX = 27000 //29 Mil, Limite de Gas Para Velocidad Maxima
+GasPriceMX = 15000000000 //13 Gwei, Para Aumentarlo o Disminuir Solo cambia el numero 13
 //LOAD :: GAS CONFIG
 
 const accounts = [
